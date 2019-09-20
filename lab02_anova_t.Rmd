@@ -1,0 +1,143 @@
+---
+title: "Lab02 - t tests and confidence intervals for ANOVA"
+author: "Your Name Here"
+output: pdf_document
+---
+
+## Goals
+
+The goal in this lab is to get some practice working with t-based inference for ANOVA models in R.
+
+## Loading packages
+
+Here are some packages with functionality you may need for this lab.  Run this code chunk now.
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(mosaic)
+library(gmodels)
+
+options("pillar.sigfig" = 10) # print 10 significant digits in summarize output
+```
+
+## Reading in the Spock data
+
+The following R code reads in the data set for the Spock Trial and takes a first look at the data.  Run this code now; no need to modify it.
+
+```{r}
+juries <- read_csv("http://www.evanlray.com/data/sleuth3/ex0502_women_jurors.csv")
+
+dim(juries)
+head(juries)
+
+juries %>% count(Judge)
+```
+
+## Make some plots
+
+Use this space to make some plots of the Spock trial data.
+
+```{r}
+
+```
+
+## t tests and confidence intervals
+
+Use this space to conduct hypothesis tests and find confidence intervals.
+
+#### Example 2 (a) from page 9 of http://www.evanlray.com/stat242_f2019/materials/20190913_anova/anova_pairwise.pdf
+
+Conduct a hypothesis test of the claim that the mean percent of potential jurors who are women in venires assembled by Spock’s judge is the same as the mean percent of potential jurors who are women in venires assembled by judge A. Also find and report a 95% confidence interval for the difference inmeans for those two judges. State your null and alternative hypotheses in terms of equations and written sentences. What are the constants $C_1, \ldots, C_I$ to use for this procedure?
+
+$\mu_1$ = "population" mean percent of women in jury pools for Judge A
+$\mu_2$ = "population" mean percent of women in jury pools for Judge B
+$\mu_3$ = "population" mean percent of women in jury pools for Judge C
+$\mu_4$ = "population" mean percent of women in jury pools for Judge D
+$\mu_5$ = "population" mean percent of women in jury pools for Judge E
+$\mu_6$ = "population" mean percent of women in jury pools for Judge F
+$\mu_7$ = "population" mean percent of women in jury pools for Spock's Judge
+
+Null Hypothesis: $\mu_1 - \mu_7 = 0$  (population means for Judge A and Spock's judge are the same)
+
+Alternative Hypothesis: $\mu_1 - \mu_7 \neq 0$  (population means for Judge A and Spock's judge are different)
+
+In terms of all 7 means, the null hypothesis says
+
+$(1) \mu_1 + 0 * \mu_2 + 0 * \mu_3 + 0 * \mu_4 + 0 * \mu_5 + 0 * \mu_6 + (-1) \mu_7 = 0$
+
+```{r}
+model_fit <- lm(Percent ~ Judge, data = juries)
+fit.contrast(model_fit, "Judge", c(1, 0, 0, 0, 0, 0, -1), conf = 0.95)
+```
+
+The p-value for the test is $1.05 * 10^{-5}$ providing strong evidence againt the null hypothesis that the population mean percent of women in jury pools is the same for Judge A and Spock's judge.
+
+We are 95% confident that the difference in population mean percent women between Judge A and Spock's judge is between 11.7 and 27.3.
+
+#### Example 2 (b) from page 9 of http://www.evanlray.com/stat242_f2019/materials/20190913_anova/anova_pairwise.pdf
+
+Conduct a hypothesis test of the claim that the mean percent of potential jurors who are women in venires assembled by Spock’s judge is the same as the mean percent of potential jurors who are women across all 6 other judges. Also find and report a 95% confidence interval for the difference in means between Spock’s judge and the average across all 6 other judges. State your null and alternative hypotheses interms of equations and written sentences. What are the constants $C_1, \ldots, C_I$ to use for this procedure?
+
+Null hypothesis: $\mu_7 = (1/6) \mu_1 +(1/6) \mu_2 + \cdots + (1/6) \mu_6$
+
+OR
+
+Null hypothesis: $(1/6) \mu_1 +(1/6) \mu_2 + \cdots + (1/6) \mu_6 - \mu_7 = 0$
+
+```{r}
+fit.contrast(model_fit, "Judge", c(1/6, 1/6, 1/6, 1/6, 1/6, 1/6, -1), conf = 0.95)
+```
+
+The p-value for this test is $1.5 * 10^{-6}$.
+
+We are 95 percent confident that the difference in population means between Spock's judge and the average across all 6 other judges is between 9.63 and 20.32.
+
+For 95% of all samples, an interval calculated using this procedure would contain the difference in population means between Spock's judge and the average across all 6 other judges.
+
+### Questions from page 5 of http://www.evanlray.com/stat242_f2019/materials/20190916_lm_summary/lm_summary.pdf
+
+#### Look at the output from calling `summary` on your linear model fit object
+
+```{r}
+summary(model_fit)
+```
+Estimated mean = 34.12 - 0.5 (JudgeB) - 5 JudgeC - 7 JudgeD - 7 JudgeE - 7 JudgeF - 19 JudgeSpock's
+
+
+#### What is the baseline category for the explanatory variable in this model?
+
+Judge A.
+
+ * A comes first alphabetically, so it's our default reference category.
+ * Nothing about JudgeA in the summary output.
+
+#### What are the possible values of the `JudgeSpock's` variable, and in what circumstances does the variable equal each of those values?
+
+1 if we're talking about Spock's judge and 0 if not
+
+#### What is the `Estimate` labelled `(Intercept)` an estimate of? Be as precise as possible.
+
+It is an estimate of the population mean for Judge A (the reference category).
+
+#### What is the `Estimate` labelled `JudgeSpock's` an estimate of? Be as precise as possible.
+
+It is an estimate of the difference in population means for Spock's judge and Judge A.
+
+#### Use the output from `summary` to conduct a test of the null hypothesis that $\mu_A = \mu_{Spock's}$.
+
+This will be based on the p-value in the row of the output table labelled JudgeSpock's.
+
+The p-value is 1.05e-05, providing very strong evidence against the claim the the population means are the same for Judge A and Spock's judge.
+
+#### Could you use the output from `summary` to conduct a test of the null hypothesis that $\mu_B = \mu_{Spock's}$? (The answer is no -- why not?)
+
+With this output, we can only look at differences between a given judge and the reference judge, Judge A.
+
+```{r}
+model.matrix(model_fit)
+```
+
+
